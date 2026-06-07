@@ -1,26 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-mufar-primary: #2563EB;
+  --color-mufar-secondary: #7C3AED;
+  --color-mufar-bg: #F8FAFC;
+  --color-mufar-dark: #0F172A;
+  --color-mufar-text: #111827;
+  --color-mufar-text-secondary: #64748B;
+  --color-mufar-border: #E2E8F0;
+  --color-mufar-success: #10B981;
+  --color-mufar-warning: #F59E0B;
+  --color-mufar-danger: #EF4444;
+  --color-mufar-info: #3B82F6;
+  --color-mufar-sidebar: #0F172A;
+  --color-mufar-card: #FFFFFF;
+  --color-mufar-hover: #F1F5F9;
+  --color-mufar-accent: #EEF2FF;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --color-mufar-badge-low: #E2E8F0;
+  --color-mufar-badge-medium: #DBEAFE;
+  --color-mufar-badge-high: #FEF3C7;
+  --color-mufar-badge-critical: #FEE2E2;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-mufar-bg);
+  color: var(--color-mufar-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  * {
+    @apply border-mufar-border;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
 }
