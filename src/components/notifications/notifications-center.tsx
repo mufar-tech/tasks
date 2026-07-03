@@ -1,22 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import {
-  Bell,
   CheckCheck,
   UserCheck,
   MessageSquare,
   CalendarClock,
   AtSign,
   RefreshCw,
-  Mail,
   BellOff,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { notifications as initialNotifications } from "@/lib/constants"
+import { Skeleton } from "@/components/ui/skeleton"
+import { getNotifications, markNotificationsRead } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import type { Notification } from "@/lib/types"
 
@@ -74,17 +72,42 @@ function NotificationItem({
 }
 
 export default function NotificationsCenter() {
-  const [notifications, setNotifications] = useState(initialNotifications)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("all")
 
-  const markAsRead = (id: string) => {
+  const fetchNotifications = useCallback(() => {
+    setLoading(true)
+    getNotifications()
+      .then((data) => {
+        setNotifications(data.notifications || [])
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    fetchNotifications()
+  }, [fetchNotifications])
+
+  const markAsRead = async (id: string) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     )
+    try {
+      await markNotificationsRead([id])
+    } catch {
+      fetchNotifications()
+    }
   }
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    const ids = notifications.filter((n) => !n.read).map((n) => n.id)
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+    try {
+      await markNotificationsRead()
+    } catch {
+      fetchNotifications()
+    }
   }
 
   const unreadCount = notifications.filter((n) => !n.read).length
@@ -112,7 +135,7 @@ export default function NotificationsCenter() {
           variant="ghost"
           size="sm"
           onClick={markAllAsRead}
-          disabled={unreadCount === 0}
+          disabled={unreadCount === 0 || loading}
           className="text-mufar-text-secondary"
         >
           <CheckCheck className="h-4 w-4 mr-1.5" />
@@ -131,7 +154,20 @@ export default function NotificationsCenter() {
         </div>
 
         <TabsContent value={activeTab} className="mt-0">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="divide-y divide-mufar-border">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-start gap-3 p-4">
+                  <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-64" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="h-16 w-16 rounded-full bg-mufar-hover flex items-center justify-center mb-4">
                 <BellOff className="h-8 w-8 text-mufar-text-secondary" />

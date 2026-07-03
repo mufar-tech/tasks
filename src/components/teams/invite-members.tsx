@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Mail, Send, CheckCircle2, X } from "lucide-react"
+import { Send, CheckCircle2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -21,35 +21,51 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
+import { createTeam } from "@/lib/api"
 
 interface InviteMembersProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
 }
 
-export default function InviteMembers({ open, onOpenChange }: InviteMembersProps) {
-  const [emails, setEmails] = useState("")
+export default function InviteMembers({ open, onOpenChange, onSuccess }: InviteMembersProps) {
+  const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
   const [role, setRole] = useState("member")
+  const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [error, setError] = useState("")
 
-  const handleSend = () => {
-    setSuccess(true)
-    setTimeout(() => {
-      setSuccess(false)
-      setEmails("")
-      setRole("member")
-      onOpenChange(false)
-    }, 2000)
+  const handleSubmit = async () => {
+    if (!name.trim()) return
+    setSaving(true)
+    setError("")
+    try {
+      await createTeam({ name: name.trim(), description: description.trim(), members: [] })
+      setSuccess(true)
+      setTimeout(() => {
+        setSuccess(false)
+        setName("")
+        setDescription("")
+        setRole("member")
+        onOpenChange(false)
+        onSuccess?.()
+      }, 1500)
+    } catch (err: any) {
+      setError(err.message || "Failed to create team")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>Invite Members</DialogTitle>
+          <DialogTitle>Create Team</DialogTitle>
           <DialogDescription>
-            Send invitations to new team members.
+            Create a new team and add members.
           </DialogDescription>
         </DialogHeader>
 
@@ -58,54 +74,36 @@ export default function InviteMembers({ open, onOpenChange }: InviteMembersProps
             <div className="h-14 w-14 rounded-full bg-mufar-success/10 flex items-center justify-center mb-4">
               <CheckCircle2 className="h-7 w-7 text-mufar-success" />
             </div>
-            <h3 className="text-lg font-semibold text-mufar-text mb-1">Invitations Sent!</h3>
+            <h3 className="text-lg font-semibold text-mufar-text mb-1">Team Created!</h3>
             <p className="text-sm text-mufar-text-secondary text-center">
-              Invitations have been sent successfully.
+              Your team has been created successfully.
             </p>
           </div>
         ) : (
           <div className="space-y-5 py-2">
             <div className="space-y-2">
-              <Label htmlFor="single-email">Email Address</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="single-email"
-                  type="email"
-                  placeholder="colleague@company.com"
-                  className="flex-1"
-                />
-                <Button size="sm" variant="outline">Add</Button>
-              </div>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-mufar-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-mufar-card px-2 text-mufar-text-secondary">Or</span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="multi-email">Multiple Emails</Label>
-              <textarea
-                id="multi-email"
-                className={cn(
-                  "flex min-h-[100px] w-full rounded-md border border-mufar-border bg-transparent px-3 py-2 text-sm shadow-sm",
-                  "placeholder:text-mufar-text-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-mufar-primary"
-                )}
-                placeholder="Enter email addresses separated by commas or new lines"
-                value={emails}
-                onChange={(e) => setEmails(e.target.value)}
+              <Label htmlFor="team-name">Team Name</Label>
+              <Input
+                id="team-name"
+                placeholder="Engineering, Design, Marketing..."
+                value={name}
+                onChange={(e) => setName(e.target.value)}
               />
-              <p className="text-xs text-mufar-text-secondary">
-                Separate multiple emails with commas or new lines.
-              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor="team-desc">Description (optional)</Label>
+              <textarea
+                id="team-desc"
+                className="flex min-h-[80px] w-full rounded-md border border-mufar-border bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-mufar-text-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-mufar-primary"
+                placeholder="What is this team for?"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="role">Default Member Role</Label>
               <Select value={role} onValueChange={setRole}>
                 <SelectTrigger id="role">
                   <SelectValue />
@@ -118,6 +116,10 @@ export default function InviteMembers({ open, onOpenChange }: InviteMembersProps
                 </SelectContent>
               </Select>
             </div>
+
+            {error && (
+              <p className="text-sm text-mufar-danger">{error}</p>
+            )}
           </div>
         )}
 
@@ -126,9 +128,9 @@ export default function InviteMembers({ open, onOpenChange }: InviteMembersProps
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
             </DialogClose>
-            <Button onClick={handleSend}>
+            <Button onClick={handleSubmit} disabled={saving || !name.trim()}>
               <Send className="h-4 w-4 mr-2" />
-              Send Invitation
+              {saving ? "Creating..." : "Create Team"}
             </Button>
           </DialogFooter>
         )}

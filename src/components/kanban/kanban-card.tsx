@@ -9,7 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import type { Task } from "@/lib/types"
-import { cn, formatDateShort } from "@/lib/utils"
+import { cn, formatDateShort, getInitials } from "@/lib/utils"
 
 const priorityDot: Record<string, string> = {
   low: "bg-slate-400",
@@ -29,7 +29,7 @@ export default function KanbanCard({ task, onDragStart }: KanbanCardProps) {
   return (
     <div
       draggable
-      onDragStart={(e) => onDragStart(e, task.id)}
+      onDragStart={(e) => onDragStart(e, (task as any)._id || task.id)}
       className="rounded-lg border border-mufar-border bg-mufar-card p-3 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
     >
       <div className="flex items-start gap-2">
@@ -51,7 +51,7 @@ export default function KanbanCard({ task, onDragStart }: KanbanCardProps) {
                 <TooltipTrigger asChild>
                   <Avatar className="h-5 w-5">
                     <AvatarFallback className="text-[8px] font-medium bg-mufar-hover text-mufar-text">
-                      {task.assignee.initials}
+                      {task.assignee.initials || getInitials(task.assignee.name)}
                     </AvatarFallback>
                   </Avatar>
                 </TooltipTrigger>
@@ -77,10 +77,10 @@ export default function KanbanCard({ task, onDragStart }: KanbanCardProps) {
           )}
         </div>
 
-        {task.comments > 0 && (
+        {(task as any).comments > 0 && (
           <div className="flex items-center gap-1 text-mufar-text-secondary">
             <MessageSquare className="h-3 w-3" />
-            <span className="text-[10px]">{task.comments}</span>
+            <span className="text-[10px]">{(task as any).comments}</span>
           </div>
         )}
       </div>

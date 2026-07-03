@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useSession } from "next-auth/react"
 import {
   LayoutDashboard,
   Briefcase,
@@ -20,7 +21,6 @@ import {
   Box,
 } from "lucide-react"
 import { cn, getInitials } from "@/lib/utils"
-import { currentUser } from "@/lib/constants"
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -37,7 +37,11 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const { data: session } = useSession()
   const [collapsed, setCollapsed] = useState(false)
+
+  const user = session?.user
+  const initials = user?.name ? getInitials(user.name) : "?"
 
   return (
     <aside
@@ -90,12 +94,12 @@ export default function Sidebar() {
       <div className="border-t border-white/10 p-3 shrink-0">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-full bg-mufar-primary/80 flex items-center justify-center text-white text-sm font-semibold shrink-0">
-            {getInitials(currentUser.name)}
+            {initials}
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-medium truncate">{currentUser.name}</p>
-              <p className="text-white/50 text-xs truncate">{currentUser.email}</p>
+              <p className="text-white text-sm font-medium truncate">{user?.name || "User"}</p>
+              <p className="text-white/50 text-xs truncate">{user?.email || ""}</p>
             </div>
           )}
           {!collapsed && (

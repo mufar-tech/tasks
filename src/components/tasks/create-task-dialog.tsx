@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -20,14 +20,17 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select"
-import { users } from "@/lib/constants"
+import { createTask, getTeams, getProjects } from "@/lib/api"
+import { Loader2 } from "lucide-react"
 
 interface CreateTaskDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
+  defaultProjectId?: string
 }
 
-export default function CreateTaskDialog({ open, onOpenChange }: CreateTaskDialogProps) {
+export default function CreateTaskDialog({ open, onOpenChange, onSuccess, defaultProjectId }: CreateTaskDialogProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [assignee, setAssignee] = useState("")
@@ -35,14 +38,78 @@ export default function CreateTaskDialog({ open, onOpenChange }: CreateTaskDialo
   const [status, setStatus] = useState("backlog")
   const [dueDate, setDueDate] = useState("")
   const [tags, setTags] = useState("")
+  const [projectId, setProjectId] = useState(defaultProjectId || "")
+  const [submitting, setSubmitting] = useState(false)
+  const [teamMembers, setTeamMembers] = useState<any[]>([])
+  const [projects, setProjects] = useState<any[]>([])
+  const [loadingOptions, setLoadingOptions] = useState(false)
 
-  const handleSubmit = () => {
-    onOpenChange(false)
+  useEffect(() => {
+    if (open) {
+      setLoadingOptions(true)
+      Promise.all([
+        getTeams().catch(() => []),
+        getProjects().catch(() => []),
+      ]).then(([teams, projs]) => {
+        const members: any[] = []
+        if (Array.isArray(teams)) {
+          teams.forEach((t: any) => {
+            if (Array.isArray(t.members)) {
+              t.members.forEach((m: any) => {
+                if (!members.find((x) => (x._id || x.id) === (m._id || m.id))) {
+                  members.push(m)
+                }
+              })
+            }
+          })
+        }
+        setTeamMembers(members)
+        setProjects(Array.isArray(projs) ? projs : [])
+        if (!defaultProjectId && Array.isArray(projs) && projs.length > 0) {
+          setProjectId(projs[0]._id || projs[0].id)
+        }
+      }).finally(() => setLoadingOptions(false))
+    }
+  }, [open, defaultProjectId])
+
+  const resetForm = () => {
+    setTitle("")
+    setDescription("")
+    setAssignee("")
+    setPriority("medium")
+    setStatus("backlog")
+    setDueDate("")
+    setTags("")
+    setProjectId(defaultProjectId || "")
+  }
+
+  const handleSubmit = async () => {
+    if (!title.trim()) return
+    setSubmitting(true)
+    try {
+      await createTask({
+        title: title.trim(),
+        description,
+        assignee: assignee || undefined,
+        priority,
+        status,
+        dueDate: dueDate || undefined,
+        tags: tags ? tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
+        projectId,
+      })
+      resetForm()
+      onOpenChange(false)
+      onSuccess?.()
+    } catch {
+      // error handled silently
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Task</DialogTitle>
           <DialogDescription>
@@ -72,17 +139,34 @@ export default function CreateTaskDialog({ open, onOpenChange }: CreateTaskDialo
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="project">Project</Label>
+            <Select value={projectId} onValueChange={setProjectId} disabled={loadingOptions || !!defaultProjectId}>
+              <SelectTrigger id="project">
+                <SelectValue placeholder="Select project" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((p: any) => (
+                  <SelectItem key={p._id || p.id} value={p._id || p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="assignee">Assignee</Label>
-              <Select value={assignee} onValueChange={setAssignee}>
+              <Select value={assignee} onValueChange={setAssignee} disabled={loadingOptions}>
                 <SelectTrigger id="assignee">
                   <SelectValue placeholder="Select assignee" />
                 </SelectTrigger>
                 <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name}
+                  <SelectItem value="">Unassigned</SelectItem>
+                  {teamMembers.map((m: any) => (
+                    <SelectItem key={m._id || m.id} value={m._id || m.id}>
+                      {m.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -144,9 +228,12 @@ export default function CreateTaskDialog({ open, onOpenChange }: CreateTaskDialo
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline" disabled={submitting}>Cancel</Button>
           </DialogClose>
-          <Button onClick={handleSubmit}>Create Task</Button>
+          <Button onClick={handleSubmit} disabled={submitting || !title.trim()}>
+            {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Create Task
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

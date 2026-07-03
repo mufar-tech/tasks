@@ -1,11 +1,23 @@
 "use client"
 
+import { useSession } from "next-auth/react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import SubscriptionOverview from "@/components/billing/subscription-overview"
 import BillingPlans from "@/components/billing/billing-plans"
 import BillingHistory from "@/components/billing/billing-history"
 
 export default function BillingPage() {
+  const { data: session } = useSession()
+  const role = (session?.user as any)?.role || "member"
+  const planMap: Record<string, string> = {
+    owner: "enterprise",
+    admin: "business",
+    manager: "professional",
+    member: "professional",
+    guest: "free",
+  }
+  const currentPlanId = planMap[role] || "free"
+
   return (
     <div className="space-y-6">
       <div>
@@ -27,7 +39,7 @@ export default function BillingPage() {
         </TabsContent>
 
         <TabsContent value="plans">
-          <BillingPlans />
+          <BillingPlans currentPlanId={currentPlanId} />
         </TabsContent>
 
         <TabsContent value="history">

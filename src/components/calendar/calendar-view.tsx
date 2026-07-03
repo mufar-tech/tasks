@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import {
   ChevronLeft,
   ChevronRight,
@@ -9,10 +9,9 @@ import {
   CalendarClock,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
-import { calendarEvents } from "@/lib/constants"
-import type { CalendarEvent } from "@/lib/types"
+import { getTasks } from "@/lib/api"
 
 type ViewMode = "month" | "week" | "day"
 
@@ -46,13 +45,6 @@ function isSameDay(a: Date, b: Date) {
   )
 }
 
-function getEventsForDate(events: CalendarEvent[], date: Date) {
-  return events.filter((e) => {
-    const eventDate = new Date(e.date)
-    return isSameDay(eventDate, date)
-  })
-}
-
 function getWeekDates(date: Date) {
   const start = new Date(date)
   start.setDate(start.getDate() - start.getDay())
@@ -65,11 +57,12 @@ function getWeekDates(date: Date) {
   return dates
 }
 
-const eventTypeColors: Record<string, string> = {
-  deadline: "border-l-red-500 bg-red-50 text-red-700",
-  milestone: "border-l-blue-500 bg-blue-50 text-blue-700",
-  meeting: "border-l-amber-500 bg-amber-50 text-amber-700",
-  task: "border-l-cyan-500 bg-cyan-50 text-cyan-700",
+const statusColor: Record<string, string> = {
+  backlog: "border-l-gray-400 bg-mufar-badge-low text-mufar-dark",
+  "to-do": "border-l-blue-400 bg-mufar-badge-medium text-blue-700",
+  "in-progress": "border-l-amber-400 bg-mufar-badge-high text-amber-700",
+  review: "border-l-purple-400 bg-mufar-accent text-mufar-secondary",
+  completed: "border-l-emerald-400 bg-emerald-100 text-emerald-700",
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
@@ -77,7 +70,27 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i)
 export default function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<ViewMode>("month")
+  const [tasks, setTasks] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const today = new Date()
+
+  const fetchTasks = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await getTasks()
+      setTasks(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load tasks")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchTasks()
+  }, [fetchTasks])
 
   const navigate = (direction: "prev" | "next") => {
     setCurrentDate((prev) => {
@@ -111,9 +124,58 @@ export default function CalendarView() {
     return getWeekDates(currentDate)
   }, [currentDate, view])
 
+  const getEventsForDate = (date: Date) => {
+    return tasks.filter((t) => {
+      if (!t.dueDate) return false
+      const eventDate = new Date(t.dueDate)
+      return isSameDay(eventDate, date)
+    })
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-9 w-56" />
+        </div>
+        <div className="rounded-lg border border-mufar-border overflow-hidden">
+          <div className="grid grid-cols-7 bg-mufar-hover border-b border-mufar-border">
+            {DAYS.map((day) => (
+              <div key={day} className="px-3 py-2">
+                <Skeleton className="h-3 w-8 mx-auto" />
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7">
+            {Array.from({ length: 35 }).map((_, i) => (
+              <div key={i} className="min-h-[100px] border-b border-r border-mufar-border p-1.5">
+                <Skeleton className="h-6 w-6 rounded-full mx-auto mb-1" />
+                <Skeleton className="h-4 w-full mt-1" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="h-16 w-16 rounded-full bg-mufar-hover flex items-center justify-center mb-4">
+          <CalendarRange className="h-8 w-8 text-mufar-danger" />
+        </div>
+        <h3 className="text-lg font-semibold text-mufar-text mb-1">Failed to load calendar</h3>
+        <p className="text-sm text-mufar-text-secondary mb-4">{error}</p>
+        <Button variant="outline" onClick={fetchTasks}>Try again</Button>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={goToToday}>
             Today
@@ -181,7 +243,7 @@ export default function CalendarView() {
                 ? new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
                 : null
               const isToday = date && isSameDay(date, today)
-              const events = date ? getEventsForDate(calendarEvents, date) : []
+              const events = date ? getEventsForDate(date) : []
 
               return (
                 <div
@@ -204,18 +266,23 @@ export default function CalendarView() {
                         </span>
                       </div>
                       <div className="space-y-1">
-                        {events.map((event) => (
+                        {events.slice(0, 3).map((event) => (
                           <div
-                            key={event.id}
+                            key={event._id || event.id}
                             className={cn(
                               "text-[10px] px-1.5 py-0.5 rounded border-l-2 truncate",
-                              eventTypeColors[event.type] || "border-l-gray-400 bg-gray-50 text-gray-700"
+                              statusColor[event.status] || "border-l-gray-400 bg-gray-50 text-gray-700"
                             )}
                             title={event.title}
                           >
                             {event.title}
                           </div>
                         ))}
+                        {events.length > 3 && (
+                          <div className="text-[10px] text-mufar-text-secondary pl-1">
+                            +{events.length - 3} more
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
@@ -253,7 +320,7 @@ export default function CalendarView() {
           </div>
           <div className="grid grid-cols-7">
             {weekDates.map((date, i) => {
-              const events = getEventsForDate(calendarEvents, date)
+              const events = getEventsForDate(date)
               return (
                 <div
                   key={i}
@@ -261,14 +328,14 @@ export default function CalendarView() {
                 >
                   {events.map((event) => (
                     <div
-                      key={event.id}
+                      key={event._id || event.id}
                       className={cn(
                         "text-[10px] px-2 py-1 rounded border-l-2",
-                        eventTypeColors[event.type] || "border-l-gray-400 bg-gray-50 text-gray-700"
+                        statusColor[event.status] || "border-l-gray-400 bg-gray-50 text-gray-700"
                       )}
                     >
                       <div className="font-medium truncate">{event.title}</div>
-                      <div className="text-[9px] opacity-75 capitalize">{event.type}</div>
+                      <div className="text-[9px] opacity-75 capitalize">{event.status === "to-do" ? "To Do" : event.status === "in-progress" ? "In Progress" : event.status}</div>
                     </div>
                   ))}
                 </div>
@@ -287,8 +354,9 @@ export default function CalendarView() {
           </div>
           <div className="divide-y divide-mufar-border">
             {HOURS.map((hour) => {
-              const events = calendarEvents.filter((e) => {
-                const d = new Date(e.date)
+              const events = tasks.filter((t) => {
+                if (!t.dueDate) return false
+                const d = new Date(t.dueDate)
                 return isSameDay(d, currentDate) && d.getHours() === hour
               })
               return (
@@ -301,15 +369,15 @@ export default function CalendarView() {
                   <div className="flex-1 px-3 py-1 space-y-1">
                     {events.map((event) => (
                       <div
-                        key={event.id}
+                        key={event._id || event.id}
                         className={cn(
                           "text-xs px-2 py-1 rounded border-l-2",
-                          eventTypeColors[event.type] || "border-l-gray-400 bg-gray-50 text-gray-700"
+                          statusColor[event.status] || "border-l-gray-400 bg-gray-50 text-gray-700"
                         )}
                       >
                         <span className="font-medium">{event.title}</span>
                         <span className="text-[10px] text-mufar-text-secondary ml-2 capitalize">
-                          {event.type}
+                          {event.status === "to-do" ? "To Do" : event.status === "in-progress" ? "In Progress" : event.status}
                         </span>
                       </div>
                     ))}

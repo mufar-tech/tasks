@@ -4,7 +4,6 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -13,79 +12,104 @@ import {
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 
-const data = [
-  { day: "Mon", completed: 12, productivity: 72 },
-  { day: "Tue", completed: 18, productivity: 85 },
-  { day: "Wed", completed: 14, productivity: 78 },
-  { day: "Thu", completed: 22, productivity: 91 },
-  { day: "Fri", completed: 16, productivity: 80 },
-  { day: "Sat", completed: 8, productivity: 65 },
-  { day: "Sun", completed: 5, productivity: 55 },
-]
+interface StatusItem {
+  status: string
+  count: number
+}
 
-export default function ProductivityChart() {
+interface PriorityItem {
+  priority: string
+  count: number
+}
+
+interface ProductivityChartProps {
+  tasksByStatus: StatusItem[]
+  tasksByPriority: PriorityItem[]
+}
+
+const statusOrder: Record<string, number> = { "to-do": 0, "in-progress": 1, review: 2, completed: 3, backlog: 4 }
+const priorityOrder: Record<string, number> = { low: 0, medium: 1, high: 2, critical: 3 }
+
+export default function ProductivityChart({ tasksByStatus, tasksByPriority }: ProductivityChartProps) {
+  const statusData = [...tasksByStatus].sort((a, b) => (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99))
+  const priorityData = [...tasksByPriority].sort((a, b) => (priorityOrder[a.priority] ?? 99) - (priorityOrder[b.priority] ?? 99))
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Productivity Overview</CardTitle>
-        <CardDescription>Last 7 days</CardDescription>
+        <CardDescription>Tasks by status and priority</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-[280px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} barGap={4}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-mufar-border)" vertical={false} />
-              <XAxis
-                dataKey="day"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "var(--color-mufar-text-secondary)", fontSize: 12 }}
-              />
-              <YAxis
-                yAxisId="left"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "var(--color-mufar-text-secondary)", fontSize: 12 }}
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: "var(--color-mufar-text-secondary)", fontSize: 12 }}
-                domain={[0, 100]}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--color-mufar-card)",
-                  border: "1px solid var(--color-mufar-border)",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                }}
-              />
-              <Legend
-                wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }}
-              />
-              <Bar
-                yAxisId="left"
-                dataKey="completed"
-                name="Tasks Completed"
-                fill="var(--color-mufar-primary)"
-                radius={[4, 4, 0, 0]}
-                barSize={24}
-              />
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="productivity"
-                name="Productivity"
-                stroke="var(--color-mufar-secondary)"
-                strokeWidth={2}
-                dot={{ fill: "var(--color-mufar-secondary)", r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="h-[280px] overflow-x-auto">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={statusData} barGap={4}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-mufar-border)" vertical={false} />
+                <XAxis
+                  dataKey="status"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "var(--color-mufar-text-secondary)", fontSize: 12 }}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "var(--color-mufar-text-secondary)", fontSize: 12 }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "var(--color-mufar-card)",
+                    border: "1px solid var(--color-mufar-border)",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
+                <Bar
+                  dataKey="count"
+                  name="Tasks"
+                  fill="var(--color-mufar-primary)"
+                  radius={[4, 4, 0, 0]}
+                  barSize={36}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="h-[280px] overflow-x-auto">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={priorityData} barGap={4}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-mufar-border)" vertical={false} />
+                <XAxis
+                  dataKey="priority"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "var(--color-mufar-text-secondary)", fontSize: 12 }}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "var(--color-mufar-text-secondary)", fontSize: 12 }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "var(--color-mufar-card)",
+                    border: "1px solid var(--color-mufar-border)",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
+                <Bar
+                  dataKey="count"
+                  name="Tasks"
+                  fill="var(--color-mufar-secondary)"
+                  radius={[4, 4, 0, 0]}
+                  barSize={36}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </CardContent>
     </Card>

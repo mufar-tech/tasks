@@ -6,11 +6,11 @@ import type { Task, TaskStatus } from "@/lib/types"
 import KanbanCard from "./kanban-card"
 
 const statusConfig: Record<TaskStatus, { label: string; border: string; bg: string }> = {
-  backlog: { label: "Backlog", border: "border-t-gray-400", bg: "bg-gray-500" },
-  "to-do": { label: "To Do", border: "border-t-blue-400", bg: "bg-blue-500" },
-  "in-progress": { label: "In Progress", border: "border-t-amber-400", bg: "bg-amber-500" },
-  review: { label: "Review", border: "border-t-purple-400", bg: "bg-purple-500" },
-  completed: { label: "Completed", border: "border-t-emerald-400", bg: "bg-emerald-500" },
+  backlog: { label: "Backlog", border: "border-t-gray-400", bg: "bg-gray-400" },
+  "to-do": { label: "To Do", border: "border-t-blue-400", bg: "bg-blue-400" },
+  "in-progress": { label: "In Progress", border: "border-t-amber-400", bg: "bg-amber-400" },
+  review: { label: "Review", border: "border-t-purple-400", bg: "bg-purple-400" },
+  completed: { label: "Completed", border: "border-t-emerald-400", bg: "bg-emerald-400" },
 }
 
 interface KanbanColumnProps {
@@ -36,7 +36,7 @@ export default function KanbanColumn({
   return (
     <div
       className={cn(
-        "flex flex-col min-w-[300px] flex-1 rounded-lg border border-mufar-border bg-mufar-card/50 border-t-4",
+        "flex flex-col min-w-[280px] w-[280px] sm:w-72 rounded-lg border border-mufar-border bg-mufar-card/50 border-t-4",
         config.border
       )}
       onDragOver={(e) => {
@@ -68,7 +68,7 @@ export default function KanbanColumn({
         )}
       >
         {tasks.map((task) => (
-          <KanbanCard key={task.id} task={task} onDragStart={onDragStart} />
+          <KanbanCard key={(task as any)._id || task.id} task={task} onDragStart={onDragStart} />
         ))}
         {tasks.length === 0 && (
           <div className="flex items-center justify-center h-24 text-xs text-mufar-text-secondary">
