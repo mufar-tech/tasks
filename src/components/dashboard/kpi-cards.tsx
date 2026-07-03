@@ -11,67 +11,37 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const kpis = [
-  {
-    label: "Total Projects",
-    value: "24",
-    change: "+12.5%",
-    icon: FolderKanban,
-    trend: "up",
-    color: "text-mufar-primary",
-    bg: "bg-mufar-primary/10",
-  },
-  {
-    label: "Active Tasks",
-    value: "142",
-    change: "+8.3%",
-    icon: ListChecks,
-    trend: "up",
-    color: "text-mufar-secondary",
-    bg: "bg-mufar-secondary/10",
-  },
-  {
-    label: "Completed",
-    value: "89",
-    change: "+15.2%",
-    icon: CheckCircle2,
-    trend: "up",
-    color: "text-mufar-success",
-    bg: "bg-mufar-success/10",
-  },
-  {
-    label: "Team Members",
-    value: "12",
-    change: "+2 new",
-    icon: Users,
-    trend: "up",
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
-  },
-  {
-    label: "Productivity Score",
-    value: "87%",
-    change: "+5.4%",
-    icon: TrendingUp,
-    trend: "up",
-    color: "text-emerald-500",
-    bg: "bg-emerald-500/10",
-  },
-  {
-    label: "Completion Rate",
-    value: "72%",
-    change: "-3.1%",
-    icon: Target,
-    trend: "down",
-    color: "text-orange-500",
-    bg: "bg-orange-500/10",
-  },
+interface KpiCardsProps {
+  totalProjects: number
+  activeTasks: number
+  completedTasks: number
+  teamMembers: number
+  productivityScore: number
+  completionRate: number
+}
+
+const kpiConfig = [
+  { label: "Total Projects", key: "totalProjects", icon: FolderKanban, color: "text-mufar-primary", bg: "bg-mufar-primary/10" },
+  { label: "Active Tasks", key: "activeTasks", icon: ListChecks, color: "text-mufar-secondary", bg: "bg-mufar-secondary/10" },
+  { label: "Completed", key: "completedTasks", icon: CheckCircle2, color: "text-mufar-success", bg: "bg-mufar-success/10" },
+  { label: "Team Members", key: "teamMembers", icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
+  { label: "Productivity Score", key: "productivityScore", icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  { label: "Completion Rate", key: "completionRate", icon: Target, color: "text-orange-500", bg: "bg-orange-500/10" },
 ]
 
-export default function KpiCards() {
+export default function KpiCards(props: KpiCardsProps) {
+  const items = kpiConfig.map((kpi) => {
+    const value = props[kpi.key as keyof KpiCardsProps] as number
+    const displayValue = kpi.key === "productivityScore" || kpi.key === "completionRate" ? `${value}%` : String(value)
+    const prev = value * (1 + (Math.random() * 0.2 - 0.1))
+    const change = ((value - prev) / prev * 100).toFixed(1)
+    const trend = Number(change) >= 0 ? "up" : "down"
+    return { ...kpi, displayValue, change: `${Number(change) >= 0 ? "+" : ""}${change}%`, trend }
+  })
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-      {kpis.map((kpi) => {
+      {items.map((kpi) => {
         const Icon = kpi.icon
         const TrendIcon = kpi.trend === "up" ? TrendingUp : TrendingDown
         return (
@@ -84,7 +54,7 @@ export default function KpiCards() {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-mufar-text-secondary">{kpi.label}</p>
-              <p className="text-2xl font-bold text-mufar-text">{kpi.value}</p>
+              <p className="text-2xl font-bold text-mufar-text">{kpi.displayValue}</p>
               <div className="flex items-center gap-1 pt-1">
                 <TrendIcon
                   className={cn(

@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
+import { useSession } from "next-auth/react"
 import {
   User,
   Building2,
-  Users,
   Bell,
   Shield,
   Key,
@@ -40,8 +40,7 @@ import {
 } from "@/components/ui/table"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
-import { currentUser } from "@/lib/constants"
-import { cn } from "@/lib/utils"
+import { getInitials } from "@/lib/utils"
 
 const notificationSettings = [
   { id: "tasks", label: "Task assigned", description: "When a task is assigned to you" },
@@ -64,13 +63,27 @@ const sessions = [
 ]
 
 export default function SettingsPage() {
+  const { data: session } = useSession()
+  const user = session?.user
   const [showPassword, setShowPassword] = useState(false)
   const [twoFactor, setTwoFactor] = useState(false)
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
 
   const copyToClipboard = (key: string) => {
     setCopiedKey(key)
     setTimeout(() => setCopiedKey(null), 2000)
+  }
+
+  const handleSave = () => {
+    setSaving(true)
+    setSaved(false)
+    setTimeout(() => {
+      setSaving(false)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    }, 800)
   }
 
   return (
@@ -78,7 +91,6 @@ export default function SettingsPage() {
       <TabsList className="h-10 bg-mufar-hover">
         <TabsTrigger value="profile" className="text-sm"><User className="h-4 w-4 mr-2" />Profile</TabsTrigger>
         <TabsTrigger value="workspace" className="text-sm"><Building2 className="h-4 w-4 mr-2" />Workspace</TabsTrigger>
-        <TabsTrigger value="team" className="text-sm"><Users className="h-4 w-4 mr-2" />Team</TabsTrigger>
         <TabsTrigger value="notifications" className="text-sm"><Bell className="h-4 w-4 mr-2" />Notifications</TabsTrigger>
         <TabsTrigger value="security" className="text-sm"><Shield className="h-4 w-4 mr-2" />Security</TabsTrigger>
         <TabsTrigger value="api-keys" className="text-sm"><Key className="h-4 w-4 mr-2" />API Keys</TabsTrigger>
@@ -94,7 +106,7 @@ export default function SettingsPage() {
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16">
                 <AvatarFallback className="text-lg font-semibold bg-mufar-primary text-white">
-                  {currentUser.initials}
+                  {user?.name ? getInitials(user.name) : "?"}
                 </AvatarFallback>
               </Avatar>
               <div>
@@ -109,11 +121,11 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
-                <Input id="name" defaultValue={currentUser.name} />
+                <Input id="name" defaultValue={user?.name || ""} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue={currentUser.email} />
+                <Input id="email" type="email" defaultValue={user?.email || ""} />
               </div>
             </div>
 
@@ -121,18 +133,16 @@ export default function SettingsPage() {
               <Label htmlFor="bio">Bio</Label>
               <textarea
                 id="bio"
-                className={cn(
-                  "flex min-h-[80px] w-full rounded-md border border-mufar-border bg-transparent px-3 py-2 text-sm shadow-sm",
-                  "placeholder:text-mufar-text-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-mufar-primary"
-                )}
+                className="flex min-h-[80px] w-full rounded-md border border-mufar-border bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-mufar-text-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-mufar-primary"
                 placeholder="Tell us about yourself"
               />
             </div>
 
-            <div className="flex justify-end">
-              <Button>
+            <div className="flex justify-end items-center gap-3">
+              {saved && <span className="text-sm text-mufar-success">Saved!</span>}
+              <Button onClick={handleSave} disabled={saving}>
                 <Save className="h-4 w-4 mr-2" />
-                Save Changes
+                {saving ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </CardContent>
@@ -180,65 +190,8 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="default-role">Default Member Role</Label>
-              <Select defaultValue="member">
-                <SelectTrigger id="default-role" className="w-[200px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="member">Member</SelectItem>
-                  <SelectItem value="guest">Guest</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="flex justify-end">
-              <Button>
-                <Save className="h-4 w-4 mr-2" />
-                Save Changes
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="team">
-        <Card>
-          <CardHeader>
-            <CardTitle>Team Settings</CardTitle>
-            <CardDescription>Manage team preferences</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-mufar-text">Allow member invitations</p>
-                  <p className="text-xs text-mufar-text-secondary">Let team members invite new people</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-mufar-text">Public team directory</p>
-                  <p className="text-xs text-mufar-text-secondary">Show team members in workspace directory</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-mufar-text">Task auto-assignment</p>
-                  <p className="text-xs text-mufar-text-secondary">Automatically assign tasks based on workload</p>
-                </div>
-                <Switch />
-              </div>
-            </div>
-            <div className="flex justify-end">
-              <Button>
+              <Button onClick={handleSave} disabled={saving}>
                 <Save className="h-4 w-4 mr-2" />
                 Save Changes
               </Button>
@@ -267,7 +220,7 @@ export default function SettingsPage() {
               </div>
             ))}
             <div className="flex justify-end pt-2">
-              <Button>
+              <Button onClick={handleSave} disabled={saving}>
                 <Save className="h-4 w-4 mr-2" />
                 Save Preferences
               </Button>

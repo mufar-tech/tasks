@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { useSession } from "next-auth/react"
 import {
   Bell,
   CircleHelp,
@@ -23,11 +25,24 @@ import {
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu"
 import { cn, getInitials } from "@/lib/utils"
-import { currentUser, notifications } from "@/lib/constants"
-
-const unreadCount = notifications.filter((n) => !n.read).length
+import { getNotifications } from "@/lib/api"
 
 export default function Header() {
+  const { data: session } = useSession()
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    getNotifications()
+      .then((notifications) => {
+        const unread = notifications.filter((n: any) => !n.read).length
+        setUnreadCount(unread)
+      })
+      .catch(() => {})
+  }, [])
+
+  const user = session?.user
+  const initials = user?.name ? getInitials(user.name) : "?"
+
   return (
     <header className="flex items-center justify-between h-16 px-6 border-b border-mufar-border bg-mufar-card shrink-0">
       <div className="relative w-96">
@@ -65,7 +80,7 @@ export default function Header() {
               <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
                 <Avatar className="h-9 w-9">
                   <AvatarFallback className="bg-mufar-primary text-white text-xs font-medium">
-                    {getInitials(currentUser.name)}
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -73,8 +88,8 @@ export default function Header() {
             <DropdownMenuContent className="w-56" align="end" sideOffset={8}>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium text-mufar-text">{currentUser.name}</p>
-                  <p className="text-xs text-mufar-text-secondary">{currentUser.email}</p>
+                  <p className="text-sm font-medium text-mufar-text">{user?.name || "User"}</p>
+                  <p className="text-xs text-mufar-text-secondary">{user?.email || ""}</p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />

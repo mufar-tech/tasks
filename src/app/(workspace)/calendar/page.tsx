@@ -1,7 +1,5 @@
 "use client"
 
-import { Plus } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import CalendarView from "@/components/calendar/calendar-view"
 
 export default function CalendarPage() {
@@ -14,10 +12,6 @@ export default function CalendarPage() {
             Track deadlines, milestones, and events.
           </p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Event
-        </Button>
       </div>
 
       <CalendarView />

@@ -8,6 +8,7 @@ import CreateTaskDialog from "@/components/tasks/create-task-dialog"
 
 export default function TasksPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   return (
     <div className="space-y-6">
@@ -24,8 +25,15 @@ export default function TasksPage() {
         </Button>
       </div>
 
-      <TaskList />
-      <CreateTaskDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <TaskList key={refreshKey} />
+      <CreateTaskDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSuccess={() => {
+          setDialogOpen(false)
+          setRefreshKey((k) => k + 1)
+        }}
+      />
     </div>
   )
 }

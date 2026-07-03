@@ -6,12 +6,16 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { billingPlans } from "@/lib/constants"
 
-export default function BillingPlans() {
+interface BillingPlansProps {
+  currentPlanId?: string
+}
+
+export default function BillingPlans({ currentPlanId = "free" }: BillingPlansProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       {billingPlans.map((plan) => {
         const isPopular = plan.popular
-        const isCurrent = plan.id === "free"
+        const isCurrent = plan.id === currentPlanId
         return (
           <div
             key={plan.id}
@@ -68,7 +72,7 @@ export default function BillingPlans() {
                 variant={isPopular ? "default" : "outline"}
                 disabled={isCurrent}
               >
-                {plan.cta}
+                {isCurrent ? "Current Plan" : plan.cta}
               </Button>
             </div>
           </div>

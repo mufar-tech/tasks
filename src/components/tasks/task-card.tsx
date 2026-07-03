@@ -10,14 +10,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import type { Task } from "@/lib/types"
-import { cn, formatDateShort, getPriorityLabel } from "@/lib/utils"
-
-const priorityBorder: Record<string, string> = {
-  low: "border-l-slate-400",
-  medium: "border-l-blue-400",
-  high: "border-l-orange-400",
-  critical: "border-l-red-400",
-}
+import { cn, formatDateShort, getPriorityLabel, getInitials } from "@/lib/utils"
 
 interface TaskCardProps {
   task: Task
@@ -27,12 +20,7 @@ export default function TaskCard({ task }: TaskCardProps) {
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date()
 
   return (
-    <div
-      className={cn(
-        "rounded-lg border border-mufar-border bg-mufar-card p-3 border-l-4",
-        priorityBorder[task.priority]
-      )}
-    >
+    <div className="rounded-lg border border-mufar-border bg-mufar-card p-3 border-l-4 border-l-transparent shadow-sm hover:shadow-md transition-all">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-medium text-mufar-text truncate">
@@ -71,7 +59,7 @@ export default function TaskCard({ task }: TaskCardProps) {
                 <TooltipTrigger asChild>
                   <Avatar className="h-6 w-6">
                     <AvatarFallback className="text-[9px] font-medium bg-mufar-hover text-mufar-text">
-                      {task.assignee.initials}
+                      {task.assignee.initials || getInitials(task.assignee.name)}
                     </AvatarFallback>
                   </Avatar>
                 </TooltipTrigger>
@@ -102,16 +90,16 @@ export default function TaskCard({ task }: TaskCardProps) {
             </span>
           )}
           <div className="flex items-center gap-2 text-mufar-text-secondary">
-            {task.comments > 0 && (
+            {(task as any).comments > 0 && (
               <span className="flex items-center gap-1 text-[11px]">
                 <MessageSquare className="h-3 w-3" />
-                {task.comments}
+                {(task as any).comments}
               </span>
             )}
-            {task.attachments > 0 && (
+            {(task as any).attachments > 0 && (
               <span className="flex items-center gap-1 text-[11px]">
                 <Paperclip className="h-3 w-3" />
-                {task.attachments}
+                {(task as any).attachments}
               </span>
             )}
           </div>

@@ -4,8 +4,19 @@ import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { projects } from "@/lib/constants"
-import { cn, formatDateShort } from "@/lib/utils"
+import { cn } from "@/lib/utils"
+
+interface ProjectData {
+  _id: string
+  name: string
+  progress: number
+  status: string
+  color: string
+}
+
+interface ProjectHealthProps {
+  projects: ProjectData[]
+}
 
 function getHealthColor(progress: number) {
   if (progress < 30) return {
@@ -38,7 +49,7 @@ function getDaysRemaining(endDate?: string) {
   return `${remaining} days left`
 }
 
-export default function ProjectHealth() {
+export default function ProjectHealth({ projects }: ProjectHealthProps) {
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
@@ -53,9 +64,8 @@ export default function ProjectHealth() {
       <CardContent className="space-y-4">
         {projects.map((project) => {
           const health = getHealthColor(project.progress)
-          const daysRemaining = getDaysRemaining(project.endDate)
           return (
-            <div key={project.id} className="space-y-2">
+            <div key={project._id} className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
                   <span
@@ -92,18 +102,6 @@ export default function ProjectHealth() {
               <div className="flex items-center justify-between">
                 <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", health.bg, health.text)}>
                   {health.label}
-                </span>
-                <span
-                  className={cn(
-                    "text-xs",
-                    daysRemaining === "Overdue"
-                      ? "text-mufar-danger"
-                      : daysRemaining === "Due today"
-                        ? "text-mufar-warning"
-                        : "text-mufar-text-secondary"
-                  )}
-                >
-                  {daysRemaining}
                 </span>
               </div>
             </div>

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { LayoutGrid, List } from "lucide-react"
+import { useState, useEffect } from "react"
+import { LayoutGrid } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -11,11 +11,21 @@ import {
   SelectItem,
 } from "@/components/ui/select"
 import KanbanBoard from "@/components/kanban/kanban-board"
-import { projects } from "@/lib/constants"
+import { getProjects } from "@/lib/api"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function BoardsPage() {
-  const [view, setView] = useState<"board" | "list">("board")
+  const [view] = useState<"board" | "list">("board")
   const [projectFilter, setProjectFilter] = useState("all")
+  const [projects, setProjects] = useState<any[]>([])
+  const [loadingProjects, setLoadingProjects] = useState(true)
+
+  useEffect(() => {
+    getProjects()
+      .then((data) => setProjects(Array.isArray(data) ? data : []))
+      .catch(() => setProjects([]))
+      .finally(() => setLoadingProjects(false))
+  }, [])
 
   return (
     <div className="space-y-6 h-full flex flex-col">
@@ -27,42 +37,22 @@ export default function BoardsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Select value={projectFilter} onValueChange={setProjectFilter}>
+          <Select value={projectFilter} onValueChange={setProjectFilter} disabled={loadingProjects}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Projects" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Projects</SelectItem>
-              {projects.map((p) => (
-                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              {projects.map((p: any) => (
+                <SelectItem key={p._id || p.id} value={p._id || p.id}>{p.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <div className="flex rounded-lg border border-mufar-border overflow-hidden">
-            <Button
-              variant={view === "board" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setView("board")}
-              className="rounded-none"
-            >
-              <LayoutGrid className="h-4 w-4 mr-1" />
-              Board
-            </Button>
-            <Button
-              variant={view === "list" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setView("list")}
-              className="rounded-none"
-            >
-              <List className="h-4 w-4 mr-1" />
-              List
-            </Button>
-          </div>
         </div>
       </div>
 
       <div className="flex-1 min-h-0">
-        {view === "board" ? <KanbanBoard /> : <KanbanBoard />}
+        <KanbanBoard projectFilter={projectFilter} />
       </div>
     </div>
   )

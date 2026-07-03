@@ -4,20 +4,29 @@ import { Calendar, AlertCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { tasks } from "@/lib/constants"
-import { formatDateShort, cn } from "@/lib/utils"
+import { formatDateShort, cn, getInitials } from "@/lib/utils"
 
-function getDaysUntil(dueDate: string) {
-  const remaining = Math.ceil(
-    (new Date(dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-  )
-  return remaining
+interface DeadlineTask {
+  title: string
+  assignee?: { name: string; image?: string }
+  dueDate: string
+  priority: "low" | "medium" | "high" | "critical"
 }
 
-export default function UpcomingDeadlines() {
+interface UpcomingDeadlinesProps {
+  tasks: DeadlineTask[]
+}
+
+function getDaysUntil(dueDate: string) {
+  return Math.ceil(
+    (new Date(dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+  )
+}
+
+export default function UpcomingDeadlines({ tasks }: UpcomingDeadlinesProps) {
   const sorted = [...tasks]
     .filter((t) => t.dueDate)
-    .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
     .slice(0, 6)
 
   return (
@@ -26,13 +35,13 @@ export default function UpcomingDeadlines() {
         <CardTitle>Upcoming Deadlines</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {sorted.map((task) => {
-          const days = getDaysUntil(task.dueDate!)
+        {sorted.map((task, i) => {
+          const days = getDaysUntil(task.dueDate)
           const isUrgent = days <= 2 && days >= 0
           const isOverdue = days < 0
           return (
             <div
-              key={task.id}
+              key={`${task.title}-${i}`}
               className="flex items-center gap-3 p-3 rounded-lg border border-mufar-border bg-mufar-card hover:bg-mufar-hover transition-colors"
             >
               <div className="flex-1 min-w-0">
@@ -48,17 +57,19 @@ export default function UpcomingDeadlines() {
                   </Badge>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-mufar-text-secondary">
-                  <div className="flex items-center gap-1.5">
-                    <Avatar className="h-5 w-5">
-                      <AvatarFallback className="text-[8px] font-medium bg-mufar-hover text-mufar-text">
-                        {task.assignee?.initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span>{task.assignee?.name}</span>
-                  </div>
+                  {task.assignee && (
+                    <div className="flex items-center gap-1.5">
+                      <Avatar className="h-5 w-5">
+                        <AvatarFallback className="text-[8px] font-medium bg-mufar-hover text-mufar-text">
+                          {getInitials(task.assignee.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>{task.assignee.name}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    <span>{formatDateShort(task.dueDate!)}</span>
+                    <span>{formatDateShort(task.dueDate)}</span>
                   </div>
                 </div>
               </div>
